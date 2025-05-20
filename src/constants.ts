@@ -1,4 +1,4 @@
-import type { TypeScalerOptions, TypeScalerStepsConfig } from "./types.js";
+import type { NormalizedPluginOptions, NormalizedStepsObject } from "./types.js";
 
 export const BASE_FONT_SIZE = 16;
 
@@ -9,7 +9,7 @@ export const DEFAULT_OPTIONS = {
   prefix: "text",
   rounded: true,
   emit: "variables",
-} satisfies TypeScalerOptions;
+} satisfies NormalizedPluginOptions;
 
 // tailwind font sizes
 export const DEFAULT_STEPS = {
@@ -27,4 +27,4 @@ export const DEFAULT_STEPS = {
   "7xl": { step: 8 },
   "8xl": { step: 9 },
   "9xl": { step: 10 },
-} satisfies TypeScalerStepsConfig as TypeScalerStepsConfig;
+} satisfies NormalizedStepsObject;

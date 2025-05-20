@@ -2,9 +2,9 @@ import postcss from "postcss";
 import { describe, expect, it, vi } from "vitest";
 
 import typeScaler from "../index.js";
-import { TypeScalerOptions } from "../types.js";
+import { PluginOptions } from "../types.js";
 
-const processCss = async (css: string, config?: TypeScalerOptions) => {
+const processCss = async (css: string, config?: PluginOptions) => {
   return postcss([typeScaler(config)]).process(css, { from: undefined });
 };
 

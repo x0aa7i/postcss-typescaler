@@ -1,12 +1,14 @@
-import type { TypeScalerOptions } from "./types.js";
+import type { PluginOptions } from "./types.js";
 import type { AtRule, Container, Plugin } from "postcss";
 
-import { DEFAULT_OPTIONS, DEFAULT_STEPS } from "./constants.js";
 import { generateStepsDeclarations } from "./generator.js";
-import { parseConfigSteps, parseCssOptions, parseCssSteps, parseFontSize } from "./parser.js";
-import { isEmptyObject, logWarning } from "./utils.js";
+import { parseCssOptions, parseCssSteps, parseJsSteps } from "./parser.js";
+import { logWarning } from "./utils.js";
+import { validateOptions, validateSteps } from "./validation.js";
 
-function postcssTypescaler(options: TypeScalerOptions = {}): Plugin {
+function postcssTypescaler(options: PluginOptions = {}): Plugin {
+  const { steps: jsSteps, ...jsOptions } = options;
+
   return {
     postcssPlugin: "postcss-typescaler",
     AtRule: {
@@ -22,28 +24,13 @@ function postcssTypescaler(options: TypeScalerOptions = {}): Plugin {
           return;
         }
 
-        const ruleOptions = { ...options, ...parseCssOptions(atRule) };
-        const ruleSteps = parseCssSteps(atRule);
-        const defaultSteps = options.steps ?? DEFAULT_STEPS;
-        const steps = !isEmptyObject(ruleSteps) ? ruleSteps : parseConfigSteps(defaultSteps);
+        const pluginOptions = { ...jsOptions, ...parseCssOptions(atRule) };
+        const pluginSteps = { ...parseJsSteps(jsSteps), ...parseCssSteps(atRule) };
 
-        const {
-          scale = DEFAULT_OPTIONS.scale,
-          fontSize = DEFAULT_OPTIONS.fontSize,
-          lineHeight = DEFAULT_OPTIONS.lineHeight,
-          prefix = DEFAULT_OPTIONS.prefix,
-          rounded = DEFAULT_OPTIONS.rounded,
-          emit = DEFAULT_OPTIONS.emit,
-        } = ruleOptions;
-
-        const declarations = generateStepsDeclarations(steps, {
-          fontSize: parseFontSize(fontSize),
-          scale,
-          lineHeight,
-          prefix,
-          rounded,
-          emit,
-        });
+        const declarations = generateStepsDeclarations(
+          validateSteps(pluginSteps),
+          validateOptions(pluginOptions)
+        );
 
         parent.insertBefore(atRule, declarations);
         atRule.remove();
@@ -55,3 +42,4 @@ function postcssTypescaler(options: TypeScalerOptions = {}): Plugin {
 postcssTypescaler.postcss = true;
 
 export default postcssTypescaler;
+export type { PluginOptions };

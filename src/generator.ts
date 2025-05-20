@@ -1,4 +1,4 @@
-import type { StepOutput } from "./types.js";
+import type { NormalizedStepOptions } from "./types.js";
 
 import { Declaration } from "postcss";
 
@@ -9,7 +9,7 @@ import { calculateScaledFontSize, logWarning, roundNumber } from "./utils.js";
  * Generate declarations for all typography steps
  */
 export function generateStepsDeclarations(
-  steps: Record<string, StepOutput>,
+  steps: Record<string, NormalizedStepOptions>,
   options: {
     fontSize: number;
     scale: number;
@@ -65,7 +65,7 @@ function createVariableDeclarations({
   prefix,
 }: {
   stepName: string;
-  stepConfig: StepOutput;
+  stepConfig: NormalizedStepOptions;
   fontSize: number;
   prefix: string;
 }): Declaration[] {

@@ -10,21 +10,12 @@ export function roundNumber(value: number, precision: number = 3): number {
   return parseFloat(value.toFixed(precision));
 }
 
-export function isValidFontSize(value: string): boolean {
-  const pattern =
-    /^(\d+(\.\d+)?(px|em|rem|ex|ch|vw|vh|vmin|vmax|%))|(small|medium|large|x-large|xx-large|smaller|larger|initial|inherit)$/i;
-
-  return pattern.test(value.trim());
+export function isNumeric(value?: string | number): boolean {
+  return !isNaN(Number(value));
 }
 
-export function isValidLetterSpacing(value: string): boolean {
-  const pattern = /^([-+]?\d+(\.\d+)?(px|em|rem|ex|ch|vw|vh|vmin|vmax))|normal$/i;
-  return pattern.test(value.trim());
-}
-
-export function isValidLineHeight(value: string): boolean {
-  const pattern = /^(\d+(\.\d+)?(px|em|rem|ex|ch|vw|vh|vmin|vmax|%))|(\d+(\.\d+)?)|normal$/i;
-  return pattern.test(value.trim());
+export function typedEntries<T extends object>(obj: T): [keyof T, T[keyof T]][] {
+  return Object.entries(obj) as [keyof T, T[keyof T]][];
 }
 
 export function calculateScaledFontSize({
