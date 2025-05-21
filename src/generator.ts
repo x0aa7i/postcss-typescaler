@@ -3,7 +3,6 @@ import type { NormalizedPluginOptions, NormalizedTypeStep, NormalizedTypeStepsMa
 import { Declaration } from "postcss";
 
 import { BASE_FONT_SIZE } from "./constants.js";
-import { log } from "./log.js";
 import { roundFloat } from "./utils.js";
 
 /**
@@ -16,21 +15,15 @@ export function generateStepsDeclarations(options: NormalizedPluginOptions, step
     const fontSize = getFontSizeValue(stepConfig, options);
     if (!fontSize) continue;
 
-    if (options.emit === "variables") {
-      declarations.push(
-        ...createVariableDeclarations({
-          prefix: options.prefix,
-          stepName,
-          fontSize,
-          lineHeight: stepConfig.lineHeight ?? options.lineHeight,
-          letterSpacing: stepConfig.letterSpacing,
-        })
-      );
-    } else {
-      // This should not happen, but just in case
-      // TODO: Add support for other emit formats
-      log(`Only css variables is supported at the moment. Skipping @"${stepName}".`);
-    }
+    declarations.push(
+      ...createVariableDeclarations({
+        prefix: options.prefix,
+        stepName,
+        fontSize,
+        lineHeight: stepConfig.lineHeight ?? options.lineHeight,
+        letterSpacing: stepConfig.letterSpacing,
+      })
+    );
   }
 
   return declarations;

@@ -70,12 +70,6 @@ export interface PluginOptions {
    */
   prefix?: string;
   /**
-   * Specifies the output format of the plugin. Currently, only `"variables"` is supported,
-   * which generates CSS custom properties (variables).
-   * @default "variables"
-   */
-  emit?: "variables";
-  /**
    * If `true`, calculated pixel font sizes will be rounded to the nearest whole number.
    * @default true
    */
@@ -113,6 +107,5 @@ export interface NormalizedPluginOptions {
   fontSize: number; // fontSize will be converted to a number (px)
   lineHeight: string;
   prefix: string;
-  emit: "variables";
   rounded: boolean;
 }

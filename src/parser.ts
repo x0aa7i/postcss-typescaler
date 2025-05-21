@@ -6,14 +6,7 @@ import { kebabToCamel } from "./utils.js";
 
 type PluginOptionsKey = keyof PluginOptions;
 
-const PLUGIN_OPTIONS_PROPS: PluginOptionsKey[] = [
-  "scale",
-  "fontSize",
-  "lineHeight",
-  "prefix",
-  "rounded",
-  "emit",
-];
+const PLUGIN_OPTIONS_PROPS: PluginOptionsKey[] = ["scale", "fontSize", "lineHeight", "prefix", "rounded"];
 
 type Parsers<T> = {
   [K in keyof T]?: (value: string) => T[K] | undefined;
@@ -31,7 +24,6 @@ const cssOptionsParsers: Parsers<PluginOptions> = {
   lineHeight: (value) => value.trim(),
   prefix: (value) => value.trim(),
   rounded: (value) => value.toLowerCase() === "true",
-  emit: (value) => (value.toLowerCase().replace(/['"]/g, "") === "variables" ? "variables" : undefined),
 };
 
 const cssTypeStepParsers: Parsers<TypeStep> = {

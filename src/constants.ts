@@ -8,7 +8,6 @@ export const DEFAULT_OPTIONS = {
   lineHeight: "1.5",
   prefix: "text",
   rounded: true,
-  emit: "variables",
 } satisfies NormalizedPluginOptions;
 
 // tailwind font sizes

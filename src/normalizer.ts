@@ -111,10 +111,6 @@ const optionsNormalizers: OptionsNormalizer = {
     if (typeof value !== "boolean") return null;
     return value;
   },
-  emit: (value) => {
-    if (typeof value !== "string") return null;
-    return value.toLowerCase() === "variables" ? "variables" : null;
-  },
 };
 
 export function normalizeOptions(options: Omit<PluginOptions, "steps">): NormalizedPluginOptions {
