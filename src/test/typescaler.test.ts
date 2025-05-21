@@ -36,9 +36,9 @@ describe("Configuration Options", () => {
         prefix: "override";
         rounded: true;
 
-        @md 0;
-        @lg 1;
-        @xl 2;
+        --md: 0;
+        --lg: 1;
+        --xl: 2;
       }
     `;
 
@@ -86,8 +86,8 @@ describe("Configuration Options", () => {
           font-size: 1.5rem;
           scale: 1.2;
           rounded: false;
-          @base 0;
-          @lg 1;
+          --base: 0;
+          --lg: 1;
         }
       `;
 
@@ -99,8 +99,8 @@ describe("Configuration Options", () => {
         @typescaler {
           font-size: 1.2em;
           scale: 1.2;
-          @base 0;
-          @lg 1;
+          --base: 0;
+          --lg: 1;
         }
       `;
     const resultEm = await processCss(cssEm);
@@ -111,7 +111,7 @@ describe("Configuration Options", () => {
         @typescaler {
           font-size: 16px;
           scale: 1.2;
-          @sm -1;
+          --sm: -1;
         }
       `;
     const resultPx = await processCss(cssPx);
@@ -121,7 +121,7 @@ describe("Configuration Options", () => {
         @typescaler {
           font-size: 20;
           scale: 1.2;
-          @base 0;
+          --base: 0;
         }
       `;
     const resultUnitless = await processCss(cssUnitless);
@@ -139,8 +139,8 @@ describe("Configuration Options", () => {
              step: -1;
              line-height: 1.4rem; /* rem override */
            }
-           @base 0;
-           @lg 1 24px; /* px override using shorthand */
+           --base: 0;
+           --lg: 1 24px; /* px override using shorthand */
          }
        `;
     const result = await processCss(css);
@@ -155,7 +155,7 @@ describe("Configuration Options", () => {
           font-size: 16;
           scale: 1.2;
           rounded: false;
-          @lg 1; /* 16 * 1.2^1 = 19.2 */
+          --lg: 1; /* 16 * 1.2^1 = 19.2 */
         }
       `;
     const result = await processCss(css);
@@ -168,7 +168,7 @@ describe("Configuration Options", () => {
             font-size: 16;
             scale: 1.4;
             rounded: true; /* Explicitly true, but default */
-            @lg 1; /* 16 * 1.4^1 = 22.4, rounded to 22 */
+            --lg: 1; /* 16 * 1.4^1 = 22.4, rounded to 22 */
           }
         `;
     const result = await processCss(css);
@@ -179,7 +179,7 @@ describe("Configuration Options", () => {
     const css = /* css */ `
         @typescaler {
           prefix: "custom-text";
-          @base 0;
+          --base: 0;
         }
       `;
     const result = await processCss(css);
@@ -189,11 +189,12 @@ describe("Configuration Options", () => {
 });
 
 describe("Breakpoint Syntax and Definitions", () => {
-  it("should define levels using @level step shorthand", async () => {
+  it("should define steps using css custom properties", async () => {
     const css = /* css */ `
         @typescaler {
-          @md 0;
-          @lg 1;
+          font-size: 16px;
+          --md: 0;
+          --lg: 1;
         }
       `;
     const result = await processCss(css);
@@ -202,7 +203,7 @@ describe("Breakpoint Syntax and Definitions", () => {
     expect(result.css).not.toContain("--text-base:"); // Not explicitly defined
   });
 
-  it("should define levels using @level { ... } block syntax", async () => {
+  it("should define steps using @step { ... } block syntax", async () => {
     const css = /* css */ `
         @typescaler {
           @sm {
@@ -220,10 +221,10 @@ describe("Breakpoint Syntax and Definitions", () => {
     expect(result.css).not.toContain("--text-base:"); // Not explicitly defined
   });
 
-  it("should define levels using @level step line-height letter-spacing shorthand", async () => {
+  it("should define steps using --[name] step line-height letter-spacing shorthand", async () => {
     const css = /* css */ `
         @typescaler {
-          @xl 2 1.8 -0.03em;
+          --xl: 2 1.8 -0.03em;
         }
       `;
     const result = await processCss(css);
@@ -232,30 +233,47 @@ describe("Breakpoint Syntax and Definitions", () => {
     expect(result.css).toContain("--text-xl--letter-spacing: -0.03em");
   });
 
+  it("should define steps using both css custom properties and @step { ... } block syntax", async () => {
+    const css = /* css */ `
+        @typescaler {
+          --sm: -1;
+          @md {
+            step: 0;
+            line-height: 1.5;
+          }
+        }
+      `;
+    const result = await processCss(css);
+    expect(result.css).toContain("--text-sm:");
+    expect(result.css).toContain("--text-md:");
+    expect(result.css).toContain("--text-md--line-height: 1.5");
+    expect(result.css).not.toContain("--text-base:"); // Not explicitly defined
+  });
+
   it("should remove the AtRules from the output", async () => {
     const css = /* css */ `
         @typescaler {
           font-size: 16;
           scale: 1.2;
-          @md 0;
-          @lg 1;
+          --md: 0;
+          --lg: 1;
         }
         body { color: red; } /* Ensure other CSS is kept */
       `;
     const result = await processCss(css);
     expect(result.css).not.toContain("@typescaler");
-    expect(result.css).not.toContain("@md");
-    expect(result.css).not.toContain("@lg");
+    expect(result.css).not.toContain("--md");
+    expect(result.css).not.toContain("--lg");
     expect(result.css).toContain("body { color: red; }");
   });
 });
 
 describe("Warnings", () => {
   it("should warn for invalid scale and use default", async () => {
-    const css = `
+    const css = /* css */ `
         @typescaler {
           scale: invalid;
-          @lg 1;
+          --lg: 1;
         }
       `;
     const result = await processCss(css);
@@ -264,8 +282,8 @@ describe("Warnings", () => {
     expect(result.css).toContain("--text-lg: 1.125rem /* 18px */;"); // using default scale of 1.125
   });
 
-  it("should handle missing step in @level", async () => {
-    const css = `
+  it("should handle missing step in @step", async () => {
+    const css = /* css */ `
       @typescaler {
         font-size: 16;
         scale: 1.2;

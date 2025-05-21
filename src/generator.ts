@@ -9,7 +9,7 @@ import { roundFloat } from "./utils.js";
 /**
  * Generate declarations for all typography steps
  */
-export function generateStepsDeclarations(steps: NormalizedTypeStepsMap, options: NormalizedPluginOptions) {
+export function generateStepsDeclarations(options: NormalizedPluginOptions, steps: NormalizedTypeStepsMap) {
   const declarations: Declaration[] = [];
 
   for (const [stepName, stepConfig] of Object.entries(steps)) {

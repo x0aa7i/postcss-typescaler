@@ -7,8 +7,6 @@ import { normalizeOptions, normalizeTypeSteps } from "./normalizer.js";
 import { parseCssOptions, parseCssTypeSteps, parseJsTypeSteps } from "./parser.js";
 
 function postcssTypescaler(options: PluginOptions = {}): Plugin {
-  const { steps: jsSteps, ...jsOptions } = options;
-
   return {
     postcssPlugin: "postcss-typescaler",
     AtRule: {
@@ -24,12 +22,13 @@ function postcssTypescaler(options: PluginOptions = {}): Plugin {
           return;
         }
 
+        const { steps: jsSteps, ...jsOptions } = options;
         const pluginOptions = { ...jsOptions, ...parseCssOptions(atRule) };
         const typeSteps = { ...parseJsTypeSteps(jsSteps), ...parseCssTypeSteps(atRule) };
 
         const declarations = generateStepsDeclarations(
-          normalizeTypeSteps(typeSteps),
-          normalizeOptions(pluginOptions)
+          normalizeOptions(pluginOptions),
+          normalizeTypeSteps(typeSteps)
         );
 
         parent.insertBefore(atRule, declarations);

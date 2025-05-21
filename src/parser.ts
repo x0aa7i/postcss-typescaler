@@ -53,7 +53,8 @@ export function parseCssOptions(atRule: AtRule): PluginOptions {
   const options: PluginOptions = {};
 
   atRule.each((node) => {
-    if (node.type !== "decl") return;
+    if (node.type !== "decl" || node.prop.startsWith("--")) return;
+
     const prop = kebabToCamel(node.prop) as PluginOptionsKey;
 
     if (!PLUGIN_OPTIONS_PROPS.includes(prop)) {
@@ -83,51 +84,51 @@ const SHORTHAND_PROPS: TypeStepKey[] = ["step", "lineHeight", "letterSpacing"];
 export function parseCssTypeSteps(atRule: AtRule): Record<string, TypeStep> {
   const steps: Record<string, TypeStep> = {};
 
-  atRule.walkAtRules((node) => {
-    const stepName = node.name;
-    const stepOpts: Record<string, TypeStep> = {};
-
-    // If there are params, parse them as shorthand
-    if (node.params) {
-      const params = node.params.trim().split(/\s+/);
+  atRule.each((node) => {
+    if (node.type === "decl" && node.prop.startsWith("--")) {
+      const name = node.prop.slice(2);
+      const config: TypeStep = {};
+      const params = node.value.trim().split(/\s+/);
 
       params.forEach((value, index) => {
+        if (index >= SHORTHAND_PROPS.length) return;
         const prop = SHORTHAND_PROPS[index];
-
-        if (!prop) {
-          log(`Unknown property at index "${index}" in @${stepName} step. Ignoring.`, { node });
-          return;
-        }
 
         const parsedValue = cssTypeStepParsers[prop]?.(value);
         if (parsedValue === undefined) {
-          log(`Could not parse "${prop}" value "${value}" in @${stepName} step. Skipping.`, { node });
+          log(`Could not parse "${prop}" value "${value}" in @${name} step. Skipping.`, { node });
           return;
         }
 
-        stepOpts[prop] = parsedValue as any;
+        config[prop] = parsedValue as any;
       });
-    }
-    // Otherwise parse declarations inside the rule
-    else {
-      node.walkDecls((node) => {
-        const prop = kebabToCamel(node.prop) as TypeStepKey;
+
+      steps[name] = config;
+    } else if (node.type === "atrule") {
+      const stepName = node.name;
+      const config: TypeStep = {};
+
+      node.walkDecls((decl) => {
+        const prop = kebabToCamel(decl.prop) as TypeStepKey;
 
         if (!STEP_PROPS.includes(prop)) {
-          log(`Unknown property "${node.prop}" in @${stepName} step. Ignoring.`, { node });
+          log(`Unknown property "${decl.prop}" in @${stepName} step. Ignoring.`, { node: decl });
           return;
         }
 
-        const parsedValue = cssTypeStepParsers[prop]?.(node.value);
+        const parsedValue = cssTypeStepParsers[prop]?.(decl.value);
         if (parsedValue === undefined) {
-          log(`Could not parse "${prop}" value "${node.value}" in @${stepName} step. Skipping.`, { node });
+          log(`Could not parse "${prop}" value "${decl.value}" in @${stepName} step. Skipping.`, {
+            node: decl,
+          });
           return;
         }
-        stepOpts[prop] = parsedValue as any;
-      });
-    }
 
-    steps[stepName] = stepOpts;
+        config[prop] = parsedValue as any;
+      });
+
+      steps[stepName] = config;
+    }
   });
 
   return steps;
