@@ -1,56 +1,35 @@
-import type { NormalizedStepOptions } from "./types.js";
+import type { NormalizedPluginOptions, NormalizedTypeStep, NormalizedTypeStepsMap } from "./types.js";
 
 import { Declaration } from "postcss";
 
-import { BASE_FONT_SIZE, DEFAULT_OPTIONS } from "./constants.js";
-import { calculateScaledFontSize, logWarning, roundNumber } from "./utils.js";
+import { BASE_FONT_SIZE } from "./constants.js";
+import { log } from "./log.js";
+import { roundFloat } from "./utils.js";
 
 /**
  * Generate declarations for all typography steps
  */
-export function generateStepsDeclarations(
-  steps: Record<string, NormalizedStepOptions>,
-  options: {
-    fontSize: number;
-    scale: number;
-    lineHeight: number | string;
-    prefix: string;
-    rounded: boolean;
-    emit: string;
-  }
-) {
+export function generateStepsDeclarations(steps: NormalizedTypeStepsMap, options: NormalizedPluginOptions) {
   const declarations: Declaration[] = [];
 
-  for (const stepName in steps) {
-    const stepConfig = steps[stepName];
-    const step = typeof stepConfig.step === "number" ? stepConfig.step : parseFloat(stepConfig.step);
-
-    if (isNaN(step)) {
-      // should not happen, but just in case
-      logWarning(`Skipping @"${stepName}" due to invalid 'step' value.`);
-      continue;
-    }
-
-    const fontSize = calculateScaledFontSize({
-      step,
-      fontSize: options.fontSize,
-      scale: options.scale,
-      rounded: options.rounded,
-    });
+  for (const [stepName, stepConfig] of Object.entries(steps)) {
+    const fontSize = getFontSizeValue(stepConfig, options);
+    if (!fontSize) continue;
 
     if (options.emit === "variables") {
       declarations.push(
         ...createVariableDeclarations({
+          prefix: options.prefix,
           stepName,
           fontSize,
-          stepConfig,
-          prefix: options.prefix,
+          lineHeight: stepConfig.lineHeight ?? options.lineHeight,
+          letterSpacing: stepConfig.letterSpacing,
         })
       );
     } else {
       // This should not happen, but just in case
       // TODO: Add support for other emit formats
-      logWarning(`Only css variables is supported at the moment. Skipping @"${stepName}".`);
+      log(`Only css variables is supported at the moment. Skipping @"${stepName}".`);
     }
   }
 
@@ -59,36 +38,39 @@ export function generateStepsDeclarations(
 
 // get the css variable declarations for a given step
 function createVariableDeclarations({
-  stepName,
-  stepConfig,
-  fontSize,
   prefix,
+  stepName,
+  fontSize,
+  lineHeight,
+  letterSpacing,
 }: {
-  stepName: string;
-  stepConfig: NormalizedStepOptions;
-  fontSize: number;
   prefix: string;
+  stepName: string;
+  fontSize: string;
+  lineHeight: string;
+  letterSpacing?: string;
 }): Declaration[] {
-  const fontSizeValue = stepConfig.fontSize ?? roundNumber(fontSize / BASE_FONT_SIZE);
-  const fontSizeComment = stepConfig.fontSize ? "" : ` /* ${fontSize}px */`;
-  const lineHeightValue = stepConfig.lineHeight ?? DEFAULT_OPTIONS.lineHeight;
-
-  return [
-    new Declaration({
-      prop: `--${prefix}-${stepName}`,
-      value: `${fontSizeValue}rem${fontSizeComment}`,
-    }),
-    new Declaration({
-      prop: `--${prefix}-${stepName}--line-height`,
-      value: lineHeightValue.toString(),
-    }),
-    ...(stepConfig.letterSpacing
-      ? [
-          new Declaration({
-            prop: `--${prefix}-${stepName}--letter-spacing`,
-            value: stepConfig.letterSpacing.toString(),
-          }),
-        ]
-      : []),
+  const declarations = [
+    new Declaration({ prop: `--${prefix}-${stepName}`, value: fontSize }),
+    new Declaration({ prop: `--${prefix}-${stepName}--line-height`, value: lineHeight }),
   ];
+
+  if (letterSpacing) {
+    declarations.push(
+      new Declaration({ prop: `--${prefix}-${stepName}--letter-spacing`, value: letterSpacing })
+    );
+  }
+
+  return declarations;
+}
+
+function getFontSizeValue(type: NormalizedTypeStep, opts: NormalizedPluginOptions): string | undefined {
+  if (type.fontSize) return type.fontSize;
+  if (type.step === undefined) return undefined; // should not happen, we check for this in the normalizer
+
+  // font size in px
+  const fontSize = opts.fontSize * Math.pow(opts.scale, type.step);
+  const rounded = opts.rounded ? Math.round(fontSize) : roundFloat(fontSize, 2);
+
+  return `${roundFloat(rounded / BASE_FONT_SIZE)}rem /* ${rounded}px */`;
 }

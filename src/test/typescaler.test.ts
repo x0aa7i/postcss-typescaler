@@ -1,5 +1,5 @@
 import postcss from "postcss";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import typeScaler from "../index.js";
 import { PluginOptions } from "../types.js";
@@ -10,7 +10,7 @@ const processCss = async (css: string, config?: PluginOptions) => {
 
 describe("Configuration Options", () => {
   it("should use default options if none are provided", async () => {
-    const css = "@typescaler {}";
+    const css = /* css */ "@typescaler {}";
     const result = await processCss(css);
     expect(result.css).toContain("--text-xs");
     expect(result.css).toContain("--text-sm");
@@ -230,7 +230,6 @@ describe("Breakpoint Syntax and Definitions", () => {
     expect(result.css).toContain("--text-xl:");
     expect(result.css).toContain("--text-xl--line-height: 1.8");
     expect(result.css).toContain("--text-xl--letter-spacing: -0.03em");
-    // Specific value checks for calculations are in 'Calculations' describe block
   });
 
   it("should remove the AtRules from the output", async () => {
@@ -251,64 +250,21 @@ describe("Breakpoint Syntax and Definitions", () => {
   });
 });
 
-describe.skip("Edge Cases and Warnings", () => {
-  it("should warn for invalid font-size", async () => {
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const css = /* css */ `
-      @typescaler {
-        font-size: invalid;
-        @base 0
-      }
-    `;
-
-    await processCss(css);
-    expect(warnSpy).toHaveBeenCalledWith(
-      '[postcss-typescaler]: Could not parse font-size value "invalid". Using 16.'
-    );
-    warnSpy.mockRestore();
-  });
-
-  it("should warn for invalid line-height", async () => {
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const css = /* css */ `
-      @typescaler {
-        font-size: 16;
-        scale: 1.2;
-        line-height: 1.5;
-
-        @sm {
-          step: -1;
-          line-height: invalid;
-        }
-      }
-    `;
-
-    await processCss(css);
-    expect(warnSpy).toHaveBeenCalledWith(
-      '[postcss-typescaler]: Invalid line-height value "invalid" in @sm. Skipping.'
-    );
-    warnSpy.mockRestore();
-  });
-
+describe("Warnings", () => {
   it("should warn for invalid scale and use default", async () => {
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     const css = `
         @typescaler {
           scale: invalid;
           @lg 1;
         }
       `;
-    await processCss(css);
-    expect(warnSpy).toHaveBeenCalledWith(
-      '[postcss-typescaler]: Could not parse scale value "invalid". Using 1.2.'
-    );
-    // Verify it used the default (1.2) for calculation
-    expect((await processCss(css)).css).toContain("--text-lg: 1.188rem /* 19px */;"); // 16 * 1.2^1 = 19.2 -> 19px
-    warnSpy.mockRestore();
+    const result = await processCss(css);
+    const warning = result.messages[0];
+    expect(warning.text).toBe('Could not parse "scale" value "invalid". Skipping.');
+    expect(result.css).toContain("--text-lg: 1.125rem /* 18px */;"); // using default scale of 1.125
   });
 
   it("should handle missing step in @level", async () => {
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     const css = `
       @typescaler {
         font-size: 16;
@@ -323,10 +279,13 @@ describe.skip("Edge Cases and Warnings", () => {
       }
     `;
 
-    await processCss(css);
-    expect(warnSpy).toHaveBeenCalledWith(
-      "[postcss-typescaler]: 'step' not found for @sm. Using default step 0."
+    const result = await processCss(css);
+
+    expect(result.messages).toHaveLength(1);
+    const warning = result.messages[0];
+    expect(warning.plugin).toBe("postcss-typescaler");
+    expect(warning.text).toBe(
+      'Invalid config for "sm" step. fontSize and step are both undefined. Skipping.'
     );
-    warnSpy.mockRestore();
   });
 });

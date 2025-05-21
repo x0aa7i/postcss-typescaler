@@ -1,14 +1,50 @@
-import type {
-  CssStepProperties,
-  NormalizedStepsObject,
-  PluginOptions,
-  StepOptions,
-  StepsObject,
-} from "./types.js";
+import type { PluginOptions, TypeStep } from "./types.js";
 import type { AtRule } from "postcss";
 
-import { BASE_FONT_SIZE, DEFAULT_OPTIONS } from "./constants.js";
-import { logWarning } from "./utils.js";
+import { log } from "./log.js";
+import { kebabToCamel } from "./utils.js";
+
+type PluginOptionsKey = keyof PluginOptions;
+
+const PLUGIN_OPTIONS_PROPS: PluginOptionsKey[] = [
+  "scale",
+  "fontSize",
+  "lineHeight",
+  "prefix",
+  "rounded",
+  "emit",
+];
+
+type Parsers<T> = {
+  [K in keyof T]?: (value: string) => T[K] | undefined;
+};
+
+const cssOptionsParsers: Parsers<PluginOptions> = {
+  scale: (value) => {
+    const parsed = parseFloat(value);
+    return isNaN(parsed) ? undefined : parsed;
+  },
+  fontSize: (value) => {
+    const numericValue = Number(value.trim());
+    return isNaN(numericValue) ? value.trim() || undefined : numericValue;
+  },
+  lineHeight: (value) => value.trim(),
+  prefix: (value) => value.trim(),
+  rounded: (value) => value.toLowerCase() === "true",
+  emit: (value) => (value.toLowerCase().replace(/['"]/g, "") === "variables" ? "variables" : undefined),
+};
+
+const cssTypeStepParsers: Parsers<TypeStep> = {
+  step: parseFloat,
+  fontSize: (value) => {
+    if (!isNaN(parseFloat(value)) && String(parseFloat(value)) === value) {
+      return parseFloat(value); // Return number if it's a simple number string
+    }
+    return value.trim();
+  },
+  lineHeight: (value) => value.trim(),
+  letterSpacing: (value) => value.trim(),
+};
 
 /**
  * Parse plugin options from an css
@@ -18,73 +54,76 @@ export function parseCssOptions(atRule: AtRule): PluginOptions {
 
   atRule.each((node) => {
     if (node.type !== "decl") return;
-    const { prop, value } = node;
+    const prop = kebabToCamel(node.prop) as PluginOptionsKey;
 
-    switch (prop) {
-      case "font-size":
-        options.fontSize = parseFontSize(value);
-        break;
-      case "scale":
-        options.scale = parseFloat(value);
-        break;
-      case "line-height":
-        options.lineHeight = value;
-        break;
-      case "prefix":
-        options.prefix = value.replace(/[^a-zA-Z0-9_-]/g, "");
-        break;
-      case "rounded":
-        options.rounded = value.toLowerCase() === "true";
-        break;
-      case "emit":
-        options.emit = "variables"; // TODO: Add support for other emit formats
-        break;
-      default:
-        logWarning(`Unknown property "${prop}" in @typescaler rule.`);
+    if (!PLUGIN_OPTIONS_PROPS.includes(prop)) {
+      log(`Unknown property "${node.prop}" in @typescaler rule. Skipping.`, { node });
+      return;
     }
+
+    const parsedValue = cssOptionsParsers[prop]?.(node.value);
+    if (parsedValue === undefined) {
+      log(`Could not parse "${prop}" value "${node.value}". Skipping.`, { node });
+      return;
+    }
+
+    options[prop] = parsedValue as any;
   });
 
   return options;
 }
 
-const STEP_PROPERTIES_MAP: Record<CssStepProperties, keyof StepOptions> = {
-  step: "step",
-  "font-size": "fontSize",
-  "line-height": "lineHeight",
-  "letter-spacing": "letterSpacing",
-};
-
-const SHORTHAND_PROPERTIES: CssStepProperties[] = ["step", "line-height", "letter-spacing"];
+type TypeStepKey = keyof TypeStep;
+const STEP_PROPS: TypeStepKey[] = ["step", "fontSize", "lineHeight", "letterSpacing"];
+const SHORTHAND_PROPS: TypeStepKey[] = ["step", "lineHeight", "letterSpacing"];
 
 /**
  * Parse step configurations from an css steps
  */
-export function parseCssSteps(atRule: AtRule): NormalizedStepsObject {
-  const steps: NormalizedStepsObject = {};
+export function parseCssTypeSteps(atRule: AtRule): Record<string, TypeStep> {
+  const steps: Record<string, TypeStep> = {};
 
-  atRule.walkAtRules((stepAtRule) => {
-    const stepName = stepAtRule.name;
-    const stepOpts: Partial<StepOptions> = {};
+  atRule.walkAtRules((node) => {
+    const stepName = node.name;
+    const stepOpts: Record<string, TypeStep> = {};
 
     // If there are params, parse them as shorthand
-    if (stepAtRule.params) {
-      const params = stepAtRule.params.trim().split(/\s+/);
+    if (node.params) {
+      const params = node.params.trim().split(/\s+/);
 
       params.forEach((value, index) => {
-        const prop = SHORTHAND_PROPERTIES[index];
-        if (prop) {
-          const mappedProp = STEP_PROPERTIES_MAP[prop];
-          stepOpts[mappedProp as keyof StepOptions] = value as any;
+        const prop = SHORTHAND_PROPS[index];
+
+        if (!prop) {
+          log(`Unknown property at index "${index}" in @${stepName} step. Ignoring.`, { node });
+          return;
         }
+
+        const parsedValue = cssTypeStepParsers[prop]?.(value);
+        if (parsedValue === undefined) {
+          log(`Could not parse "${prop}" value "${value}" in @${stepName} step. Skipping.`, { node });
+          return;
+        }
+
+        stepOpts[prop] = parsedValue as any;
       });
     }
     // Otherwise parse declarations inside the rule
     else {
-      stepAtRule.walkDecls(({ prop, value }) => {
-        const mappedProp = STEP_PROPERTIES_MAP[prop as CssStepProperties];
-        if (mappedProp) {
-          stepOpts[mappedProp as keyof StepOptions] = value as any;
+      node.walkDecls((node) => {
+        const prop = kebabToCamel(node.prop) as TypeStepKey;
+
+        if (!STEP_PROPS.includes(prop)) {
+          log(`Unknown property "${node.prop}" in @${stepName} step. Ignoring.`, { node });
+          return;
         }
+
+        const parsedValue = cssTypeStepParsers[prop]?.(node.value);
+        if (parsedValue === undefined) {
+          log(`Could not parse "${prop}" value "${node.value}" in @${stepName} step. Skipping.`, { node });
+          return;
+        }
+        stepOpts[prop] = parsedValue as any;
       });
     }
 
@@ -94,9 +133,8 @@ export function parseCssSteps(atRule: AtRule): NormalizedStepsObject {
   return steps;
 }
 
-export function parseJsSteps(steps?: StepsObject): NormalizedStepsObject {
-  const parsedSteps: NormalizedStepsObject = {};
-  if (!steps) return parsedSteps;
+export function parseJsTypeSteps(steps: PluginOptions["steps"]): Record<string, TypeStep> {
+  const parsedSteps: Record<string, TypeStep> = {};
 
   for (const stepName in steps) {
     const stepOpts = steps[stepName];
@@ -110,34 +148,4 @@ export function parseJsSteps(steps?: StepsObject): NormalizedStepsObject {
   }
 
   return parsedSteps;
-}
-
-function handleFontSizeParseError(value: string): number {
-  logWarning(`Could not parse font-size value "${value}". Using ${DEFAULT_OPTIONS.fontSize}.`);
-  return DEFAULT_OPTIONS.fontSize;
-}
-
-const UNIT_REGEX = /\d+(?:\.\d+)?([a-z]+)?$/;
-
-export function parseFontSize(value: string | number): number {
-  if (typeof value === "number") return value;
-
-  const trimmedValue = value.trim().toLowerCase();
-  const match = trimmedValue.match(UNIT_REGEX);
-
-  if (!match) return handleFontSizeParseError(value);
-
-  const numValue = parseFloat(match[0]);
-  const unit = match[1];
-
-  switch (unit) {
-    case "rem":
-    case "em":
-      return numValue * BASE_FONT_SIZE;
-    case undefined:
-    case "px":
-      return numValue;
-    default:
-      return handleFontSizeParseError(value);
-  }
 }

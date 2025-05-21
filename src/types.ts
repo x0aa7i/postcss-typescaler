@@ -1,8 +1,7 @@
 /**
  * Defines configuration options for individual text steps (e.g., 'sm', 'lg').
- * These can be set directly in PostCSS plugin configuration or via CSS at-rules.
  */
-export interface StepOptions {
+export interface TypeStep {
   /**
    * The step value on the modular scale. A positive number for larger text,
    * a negative number for smaller text.
@@ -25,23 +24,22 @@ export interface StepOptions {
 }
 
 /**
- * A map of step names (e.g., 'sm', 'base', 'xl') to their configuration options.
- * Step values can be provided as a direct number shorthand or a detailed object.
- *
- * @example
- * // As a number shorthand:
- * // {
- * //   'sm': -1,
- * //   'lg': 1
- * // }
- *
- * // As a detailed object:
- * // {
- * //   'base': { step: 0, lineHeight: 1.5 },
- * //   'xl': { fontSize: "32px", letterSpacing: "0.01em" }
- * // }
+ * A map of step names (e.g., 'sm', 'base', 'xl') to their type step configurations.
  */
-export type StepsObject = Record<string, StepOptions | number>;
+export type TypeStepsMap = Record<string, TypeStep>;
+
+/**
+ * The normalized and validated configuration for a single type step,
+ * used internally after merging defaults and parsing all inputs.
+ */
+export interface NormalizedTypeStep {
+  step?: number;
+  fontSize?: string;
+  lineHeight?: string;
+  letterSpacing?: string;
+}
+
+export type NormalizedTypeStepsMap = Record<string, NormalizedTypeStep>;
 
 /**
  * Configuration options for the TypeScaler plugin.
@@ -83,12 +81,26 @@ export interface PluginOptions {
    */
   rounded?: boolean;
   /**
-   * Defines a set of named text steps and their configurations.
+   * A map of step names (e.g., 'sm', 'base', 'xl') to their configuration options.
+   * Step values can be provided as a direct number shorthand or a detailed object.
    * These settings serve as defaults or fallbacks if no corresponding
    * steps are defined directly in your CSS.
    * @default "A set of Tailwind-like font sizes (xs, sm, base, lg, etc.)"
+   *
+   * @example
+   * // As a number shorthand:
+   * // {
+   * //   'sm': -1,
+   * //   'lg': 1
+   * // }
+   *
+   * // As a detailed object:
+   * // {
+   * //   'base': { step: 0, lineHeight: 1.5 },
+   * //   'xl': { fontSize: "32px", letterSpacing: "0.01em" }
+   * // }
    */
-  steps?: StepsObject;
+  steps?: Record<string, TypeStep | number>;
 }
 
 /**
@@ -98,50 +110,9 @@ export interface PluginOptions {
  */
 export interface NormalizedPluginOptions {
   scale: number;
-  // fontSize will be converted to a number (px)
-  fontSize: number;
-  // lineHeight will be converted to a number (unitless) or kept as a string (px/rem/em)
-  lineHeight: number | string;
+  fontSize: number; // fontSize will be converted to a number (px)
+  lineHeight: string;
   prefix: string;
   emit: "variables";
   rounded: boolean;
 }
-
-/**
- * A map of step names to their fully normalized and validated configuration,
- * used internally by the plugin.
- */
-export type NormalizedStepsObject = Record<string, StepOptions>;
-
-/**
- * The normalized and validated configuration for a single step,
- * used internally after merging defaults and parsing all inputs.
- */
-// export interface NormalizedStepOptions {
-//   step?: number;
-//   fontSize?: string | number;
-//   lineHeight?: string;
-//   letterSpacing?: string;
-// }
-
-/** Properties that can be set for a step via CSS at-rule (kebab-case, all strings). */
-export type CssStepProperties = "step" | "font-size" | "line-height" | "letter-spacing";
-
-/** Properties that can be set for the plugin via CSS at-rule (kebab-case, all strings). */
-export type OptionsProperties = "scale" | "font-size" | "line-height" | "prefix" | "rounded" | "emit";
-
-/**
- * Represents the raw string key-value pairs parsed directly from a CSS step configuration block.
- * Keys are kebab-case as found in CSS.
- */
-export type CssStepOptions = {
-  [key in CssStepProperties]?: string;
-};
-
-/**
- * Represents the raw string key-value pairs parsed directly from a top-level CSS plugin configuration.
- * Keys are kebab-case as found in CSS.
- */
-export type CssPluginOptions = {
-  [key in OptionsProperties]?: string;
-};

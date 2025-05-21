@@ -1,12 +1,8 @@
-export function logWarning(...messages: string[]): void {
-  console.warn(`[postcss-typescaler]: ${messages.join(" ")}`);
-}
-
 export function isEmptyObject(obj: Record<string, unknown>): boolean {
   return Object.keys(obj).length === 0;
 }
 
-export function roundNumber(value: number, precision: number = 3): number {
+export function roundFloat(value: number, precision: number = 3): number {
   return parseFloat(value.toFixed(precision));
 }
 
@@ -18,17 +14,6 @@ export function typedEntries<T extends object>(obj: T): [keyof T, T[keyof T]][] 
   return Object.entries(obj) as [keyof T, T[keyof T]][];
 }
 
-export function calculateScaledFontSize({
-  fontSize,
-  scale,
-  step,
-  rounded,
-}: {
-  fontSize: number;
-  scale: number;
-  step: number;
-  rounded: boolean;
-}): number {
-  const value = fontSize * Math.pow(scale, step);
-  return rounded ? Math.round(value) : roundNumber(value, 2);
+export function kebabToCamel(s: string): string {
+  return s.replace(/-(.)/g, (_, char) => char.toUpperCase());
 }

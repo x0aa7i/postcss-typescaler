@@ -1,11 +1,11 @@
-import type { NormalizedPluginOptions, NormalizedStepsObject } from "./types.js";
+import type { NormalizedPluginOptions, NormalizedTypeStepsMap } from "./types.js";
 
 export const BASE_FONT_SIZE = 16;
 
 export const DEFAULT_OPTIONS = {
   scale: 1.125,
   fontSize: 16,
-  lineHeight: 1.5,
+  lineHeight: "1.5",
   prefix: "text",
   rounded: true,
   emit: "variables",
@@ -27,4 +27,4 @@ export const DEFAULT_STEPS = {
   "7xl": { step: 8 },
   "8xl": { step: 9 },
   "9xl": { step: 10 },
-} satisfies NormalizedStepsObject;
+} satisfies NormalizedTypeStepsMap;
