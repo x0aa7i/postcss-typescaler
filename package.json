@@ -2,11 +2,30 @@
   "name": "postcss-typescaler",
   "version": "0.4.0",
   "description": "A PostCSS plugin for generating CSS Custom Properties for typography scales",
-  "main": "./dist/index.js",
+  "author": "Abdelilah Achak <contact.achak@gmail.com>",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
   "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.js"
+    }
+  },
   "scripts": {
-    "build": "tsc --build",
+    "build": "tsup",
+    "dev": "tsup --watch",
     "test": "vitest run"
+  },
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/x0aa7i/postcss-typescaler.git"
   },
   "keywords": [
     "postcss",
@@ -15,13 +34,15 @@
     "typography scale",
     "type scale"
   ],
-  "author": "Abdelilah Achak <contact.achak@gmail.com>",
-  "license": "MIT",
   "packageManager": "pnpm@10.8.0",
+  "peerDependencies": {
+    "postcss": ">=8.0.0"
+  },
   "devDependencies": {
     "@ianvs/prettier-plugin-sort-imports": "^4.4.1",
     "postcss": "^8.5.3",
     "prettier": "^3.5.3",
+    "tsup": "^8.5.0",
     "typescript": "^5.8.3",
     "vitest": "^3.1.3"
   }
