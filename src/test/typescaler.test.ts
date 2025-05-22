@@ -30,7 +30,7 @@ describe("Configuration Options", () => {
     }
   });
 
-  it("should override plugin config with @typescaler rule settings", async () => {
+  it("should override plugin js config with @typescaler css config", async () => {
     const css = /* css */ `
       @typescaler {
         font-size: 18;
@@ -138,10 +138,9 @@ describe("Configuration Options", () => {
            scale: 1.2;
            line-height: 1.5; /* Unitless default */
 
-           @sm {
-             step: -1;
-             line-height: 1.4rem; /* rem override */
-           }
+           --sm--step: -1;
+           --sm--line-height: 1.4rem; /* rem override */
+
            --base: 0;
            --lg: 1 24px; /* px override using shorthand */
          }
@@ -206,15 +205,14 @@ describe("Breakpoint Syntax and Definitions", () => {
     expect(result.css).not.toContain("--text-base:"); // Not explicitly defined
   });
 
-  it("should define steps using @step { ... } block syntax", async () => {
+  it("should define steps using --[name]--[prop] shorthand", async () => {
     const css = /* css */ `
         @typescaler {
-          @sm {
-            step: -1;
-          }
-          @md {
-            step: 0;
-          }
+          --sm: -1;
+          --sm--line-height: 1.4;
+          --sm--letter-spacing: -0.01em;
+          --md--step: 0;
+          --md--line-height: 1.5;
         }
       `;
     const result = await processCss(css);
@@ -236,18 +234,17 @@ describe("Breakpoint Syntax and Definitions", () => {
     expect(result.css).toContain("--text-xl--letter-spacing: -0.03em");
   });
 
-  it("should define steps using both css custom properties and @step { ... } block syntax", async () => {
+  it("should define steps using both css shorthand and --[name]--[prop] syntax", async () => {
     const css = /* css */ `
         @typescaler {
-          --sm: -1;
-          @md {
-            step: 0;
-            line-height: 1.5;
-          }
+          --sm: -1 1.5 -0.01em;
+          --md: 0;
+          --md--line-height: 1.5;
         }
       `;
     const result = await processCss(css);
     expect(result.css).toContain("--text-sm:");
+    expect(result.css).toContain("--text-sm--line-height: 1.5");
     expect(result.css).toContain("--text-md:");
     expect(result.css).toContain("--text-md--line-height: 1.5");
     expect(result.css).not.toContain("--text-base:"); // Not explicitly defined
@@ -285,7 +282,7 @@ describe("Warnings", () => {
     expect(result.css).toContain("--text-lg: 1.125rem /* 18px */;"); // using default scale of 1.125
   });
 
-  it("should handle missing step in @step", async () => {
+  it("should handle missing step in a declaration", async () => {
     const css = /* css */ `
       @typescaler {
         font-size: 16;
@@ -294,9 +291,7 @@ describe("Warnings", () => {
         prefix: "text";
         rounded: true;
 
-        @sm {
-          line-height: 1.4;
-        }
+        --sm--line-height: 1.4;
       }
     `;
 

@@ -6,7 +6,7 @@ import { kebabToCamel } from "./utils.js";
 
 type PluginOptionsKey = keyof PluginOptions;
 
-const PLUGIN_OPTIONS_PROPS: PluginOptionsKey[] = [
+const OPTIONS_PROPS: PluginOptionsKey[] = [
   "scale",
   "fontSize",
   "lineHeight",
@@ -52,7 +52,7 @@ const cssTypeStepParsers: Parsers<TypeStep> = {
 };
 
 /**
- * Parse plugin options from an css
+ * Parse plugin options from css
  */
 export function parseCssOptions(atRule: AtRule): PluginOptions {
   const options: PluginOptions = {};
@@ -61,7 +61,7 @@ export function parseCssOptions(atRule: AtRule): PluginOptions {
     if (node.type !== "decl" || node.prop.startsWith("--")) return;
     const prop = kebabToCamel(node.prop) as PluginOptionsKey;
 
-    if (!PLUGIN_OPTIONS_PROPS.includes(prop)) {
+    if (!OPTIONS_PROPS.includes(prop)) {
       log(`Unknown property "${node.prop}" in @typescaler rule. Skipping.`, { node });
       return;
     }
@@ -79,8 +79,7 @@ export function parseCssOptions(atRule: AtRule): PluginOptions {
 }
 
 type TypeStepKey = keyof TypeStep;
-const STEP_PROPS: TypeStepKey[] = ["step", "fontSize", "lineHeight", "letterSpacing"];
-const SHORTHAND_PROPS: TypeStepKey[] = ["step", "lineHeight", "letterSpacing"];
+const STEPS_PROPS: TypeStepKey[] = ["step", "lineHeight", "letterSpacing", "fontSize"];
 
 /**
  * Parse step configurations from an css steps
@@ -88,15 +87,35 @@ const SHORTHAND_PROPS: TypeStepKey[] = ["step", "lineHeight", "letterSpacing"];
 export function parseCssTypeSteps(atRule: AtRule): Record<string, TypeStep> {
   const steps: Record<string, TypeStep> = {};
 
-  atRule.each((node) => {
-    if (node.type === "decl" && node.prop.startsWith("--")) {
-      const name = node.prop.slice(2);
-      const config: TypeStep = {};
-      const params = node.value.trim().split(/\s+/);
+  atRule.walkDecls((node) => {
+    if (!node.prop.startsWith("--")) return;
+    const [name, property] = node.prop.slice(2).split("--");
 
+    if (!steps[name]) steps[name] = {};
+    const config: TypeStep = steps[name];
+
+    if (property) {
+      const prop = kebabToCamel(property) as TypeStepKey;
+
+      if (!STEPS_PROPS.includes(prop)) {
+        log(`Unknown property "${prop}" in ${node.prop}. Ignoring.`, { node });
+        return;
+      }
+
+      const parsedValue = cssTypeStepParsers[prop]?.(node.value);
+      if (parsedValue === undefined) {
+        log(`Could not parse "${prop}" value "${node.value}" in @${name} step. Skipping.`, {
+          node,
+        });
+        return;
+      }
+
+      config[prop] = parsedValue as any;
+    } else {
+      const params = node.value.trim().split(/\s+/);
       params.forEach((value, index) => {
-        if (index >= SHORTHAND_PROPS.length) return;
-        const prop = SHORTHAND_PROPS[index];
+        if (index >= 3) return;
+        const prop = STEPS_PROPS[index];
 
         const parsedValue = cssTypeStepParsers[prop]?.(value);
         if (parsedValue === undefined) {
@@ -106,32 +125,6 @@ export function parseCssTypeSteps(atRule: AtRule): Record<string, TypeStep> {
 
         config[prop] = parsedValue as any;
       });
-
-      steps[name] = config;
-    } else if (node.type === "atrule") {
-      const stepName = node.name;
-      const config: TypeStep = {};
-
-      node.walkDecls((decl) => {
-        const prop = kebabToCamel(decl.prop) as TypeStepKey;
-
-        if (!STEP_PROPS.includes(prop)) {
-          log(`Unknown property "${decl.prop}" in @${stepName} step. Ignoring.`, { node: decl });
-          return;
-        }
-
-        const parsedValue = cssTypeStepParsers[prop]?.(decl.value);
-        if (parsedValue === undefined) {
-          log(`Could not parse "${prop}" value "${decl.value}" in @${stepName} step. Skipping.`, {
-            node: decl,
-          });
-          return;
-        }
-
-        config[prop] = parsedValue as any;
-      });
-
-      steps[stepName] = config;
     }
   });
 
