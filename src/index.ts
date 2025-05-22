@@ -26,8 +26,8 @@ function postcssTypescaler(options: PluginOptions = {}): Plugin {
         const { steps: jsSteps, ...jsOptions } = options;
         const pluginOptions = { ...jsOptions, ...parseCssOptions(atRule) };
         const typeSteps = {
-          ...getPresetSteps(pluginOptions.preset),
           ...parseJsTypeSteps(jsSteps),
+          ...getPresetSteps(pluginOptions.preset),
           ...parseCssTypeSteps(atRule),
         };
 
