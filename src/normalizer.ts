@@ -7,9 +7,9 @@ import type {
   TypeStepsMap,
 } from "./types.js";
 
-import { BASE_FONT_SIZE, DEFAULT_OPTIONS, DEFAULT_STEPS } from "./constants.js";
+import { BASE_FONT_SIZE, DEFAULT_OPTIONS } from "./constants.js";
 import { log } from "./log.js";
-import { isEmptyObject, typedEntries } from "./utils.js";
+import { typedEntries } from "./utils.js";
 
 type TypeStepNormalizer = {
   [K in keyof TypeStep]: (value: TypeStep[K] | string) => NormalizedTypeStep[K] | null;
@@ -69,7 +69,7 @@ export function normalizeTypeSteps(steps: TypeStepsMap): NormalizedTypeStepsMap 
     normalizedSteps[stepName] = typeStep;
   }
 
-  return isEmptyObject(normalizedSteps) ? DEFAULT_STEPS : normalizedSteps;
+  return normalizedSteps;
 }
 
 type OptionsNormalizer = {
@@ -110,6 +110,10 @@ const optionsNormalizers: OptionsNormalizer = {
   rounded: (value) => {
     if (typeof value !== "boolean") return null;
     return value;
+  },
+  preset: (value) => {
+    if (value === "tailwind" || value === "default") return value;
+    return null;
   },
 };
 

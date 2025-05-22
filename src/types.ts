@@ -75,6 +75,11 @@ export interface PluginOptions {
    */
   rounded?: boolean;
   /**
+   * A preset name to use for the default step configurations.
+   * @default undefined
+   */
+  preset?: string | "tailwind";
+  /**
    * A map of step names (e.g., 'sm', 'base', 'xl') to their configuration options.
    * Step values can be provided as a direct number shorthand or a detailed object.
    * These settings serve as defaults or fallbacks if no corresponding
@@ -107,5 +112,6 @@ export interface NormalizedPluginOptions {
   fontSize: number; // fontSize will be converted to a number (px)
   lineHeight: string;
   prefix: string;
+  preset?: "tailwind" | "default";
   rounded: boolean;
 }

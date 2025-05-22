@@ -6,7 +6,14 @@ import { kebabToCamel } from "./utils.js";
 
 type PluginOptionsKey = keyof PluginOptions;
 
-const PLUGIN_OPTIONS_PROPS: PluginOptionsKey[] = ["scale", "fontSize", "lineHeight", "prefix", "rounded"];
+const PLUGIN_OPTIONS_PROPS: PluginOptionsKey[] = [
+  "scale",
+  "fontSize",
+  "lineHeight",
+  "prefix",
+  "rounded",
+  "preset",
+];
 
 type Parsers<T> = {
   [K in keyof T]?: (value: string) => T[K] | undefined;
@@ -24,6 +31,7 @@ const cssOptionsParsers: Parsers<PluginOptions> = {
   lineHeight: (value) => value.trim(),
   prefix: (value) => value.trim(),
   rounded: (value) => value.toLowerCase() === "true",
+  preset: (value) => value.trim().replace(/['"]/g, "").toLowerCase(),
 };
 
 const cssTypeStepParsers: Parsers<TypeStep> = {
@@ -46,7 +54,6 @@ export function parseCssOptions(atRule: AtRule): PluginOptions {
 
   atRule.each((node) => {
     if (node.type !== "decl" || node.prop.startsWith("--")) return;
-
     const prop = kebabToCamel(node.prop) as PluginOptionsKey;
 
     if (!PLUGIN_OPTIONS_PROPS.includes(prop)) {

@@ -1,6 +1,7 @@
 import type { PluginOptions } from "./types.js";
 import type { Plugin } from "postcss";
 
+import { getPresetSteps } from "./constants.js";
 import { generateStepsDeclarations } from "./generator.js";
 import { clearLogs, getLogs } from "./log.js";
 import { normalizeOptions, normalizeTypeSteps } from "./normalizer.js";
@@ -24,7 +25,11 @@ function postcssTypescaler(options: PluginOptions = {}): Plugin {
 
         const { steps: jsSteps, ...jsOptions } = options;
         const pluginOptions = { ...jsOptions, ...parseCssOptions(atRule) };
-        const typeSteps = { ...parseJsTypeSteps(jsSteps), ...parseCssTypeSteps(atRule) };
+        const typeSteps = {
+          ...getPresetSteps(pluginOptions.preset),
+          ...parseJsTypeSteps(jsSteps),
+          ...parseCssTypeSteps(atRule),
+        };
 
         const declarations = generateStepsDeclarations(
           normalizeOptions(pluginOptions),

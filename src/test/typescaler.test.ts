@@ -9,22 +9,25 @@ const processCss = async (css: string, config?: PluginOptions) => {
 };
 
 describe("Configuration Options", () => {
-  it("should use default options if none are provided", async () => {
+  it("should return empty declarations if no preset or steps are defined", async () => {
     const css = /* css */ "@typescaler {}";
     const result = await processCss(css);
-    expect(result.css).toContain("--text-xs");
-    expect(result.css).toContain("--text-sm");
-    expect(result.css).toContain("--text-base");
-    expect(result.css).toContain("--text-lg");
-    expect(result.css).toContain("--text-xl");
-    expect(result.css).toContain("--text-2xl");
-    expect(result.css).toContain("--text-3xl");
-    expect(result.css).toContain("--text-4xl");
-    expect(result.css).toContain("--text-5xl");
-    expect(result.css).toContain("--text-6xl");
-    expect(result.css).toContain("--text-7xl");
-    expect(result.css).toContain("--text-8xl");
-    expect(result.css).toContain("--text-9xl");
+    expect(result.css).toBe("");
+  });
+
+  it("should use tailwind preset if provided", async () => {
+    const css = /* css */ "@typescaler { preset: 'tailwind'; }";
+    const result = await processCss(css);
+
+    const rawSizes = ["xs", "sm", "base", "lg", "xl", "2xl", "3xl", "4xl", "5xl", "6xl", "7xl", "8xl", "9xl"];
+    const expectedTextSizes = rawSizes.flatMap((size) => {
+      const baseVar = `--text-${size}`;
+      return [baseVar, `${baseVar}--line-height`];
+    });
+
+    for (const size of expectedTextSizes) {
+      expect(result.css).toContain(size);
+    }
   });
 
   it("should override plugin config with @typescaler rule settings", async () => {
