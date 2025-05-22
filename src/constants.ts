@@ -8,6 +8,7 @@ export const DEFAULT_OPTIONS = {
   lineHeight: "1.5",
   prefix: "text",
   rounded: true,
+  stepOffset: 0,
   preset: undefined,
 } satisfies NormalizedPluginOptions;
 
@@ -31,8 +32,8 @@ const TAILWIND_STEPS = {
 const DEFAULT_STEPS = {
   xs: { step: -2, lineHeight: "1.3" },
   sm: { step: -1, lineHeight: "1.4" },
-  base: { step: 0, lineHeight: "1.6" },
-  md: { step: 0, lineHeight: "1.6" }, // Alias for base
+  base: { step: 0, lineHeight: "1.5" },
+  md: { step: 0, lineHeight: "1.5" }, // Alias for base
   lg: { step: 1, lineHeight: "1.5" },
   xl: { step: 2, lineHeight: "1.4" },
   "2xl": { step: 3, lineHeight: "1.3" },

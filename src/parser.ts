@@ -12,6 +12,7 @@ const PLUGIN_OPTIONS_PROPS: PluginOptionsKey[] = [
   "lineHeight",
   "prefix",
   "rounded",
+  "stepOffset",
   "preset",
 ];
 
@@ -31,6 +32,10 @@ const cssOptionsParsers: Parsers<PluginOptions> = {
   lineHeight: (value) => value.trim(),
   prefix: (value) => value.trim(),
   rounded: (value) => value.toLowerCase() === "true",
+  stepOffset: (value) => {
+    const parsed = parseFloat(value);
+    return isNaN(parsed) ? undefined : parsed;
+  },
   preset: (value) => value.trim().replace(/['"]/g, "").toLowerCase(),
 };
 

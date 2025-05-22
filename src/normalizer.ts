@@ -111,6 +111,10 @@ const optionsNormalizers: OptionsNormalizer = {
     if (typeof value !== "boolean") return null;
     return value;
   },
+  stepOffset: (value) => {
+    if (typeof value === "number") return value;
+    return null;
+  },
   preset: (value) => {
     if (value === "tailwind" || value === "default") return value;
     return null;
@@ -129,7 +133,7 @@ export function normalizeOptions(options: Omit<PluginOptions, "steps">): Normali
 
     const normalizedValue = normalizer?.(value as any);
 
-    if (normalizedValue !== undefined) {
+    if (normalizedValue !== null) {
       normalizedOptions[key] = normalizedValue as any;
     } else if (DEFAULT_OPTIONS[key] !== undefined) {
       log(`Invalid ${key} value "${value}". Using default value: ${DEFAULT_OPTIONS[key]}.`);

@@ -2,17 +2,8 @@
   "printWidth": 110,
   "tabWidth": 2,
   "useTabs": false,
-	"singleQuote": false,
-	"trailingComma": "es5",
-	"plugins": [ "@ianvs/prettier-plugin-sort-imports"],
-	"importOrder": [
-		"<TYPES>",
-		"",
-		"<BUILTIN_MODULES>",
-		"<THIRD_PARTY_MODULES>",
-		"",
-		"^\\@(/.*)$",
-		"",
-		"^[.]"
-	]
+  "singleQuote": false,
+  "trailingComma": "es5",
+  "plugins": ["@ianvs/prettier-plugin-sort-imports"],
+  "importOrder": ["<TYPES>", "", "<BUILTIN_MODULES>", "<THIRD_PARTY_MODULES>", "", "^\\@(/.*)$", "", "^[.]"]
 }

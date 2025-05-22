@@ -62,7 +62,7 @@ function getFontSizeValue(type: NormalizedTypeStep, opts: NormalizedPluginOption
   if (type.step === undefined) return undefined; // should not happen, we check for this in the normalizer
 
   // font size in px
-  const fontSize = opts.fontSize * Math.pow(opts.scale, type.step);
+  const fontSize = opts.fontSize * Math.pow(opts.scale, type.step + opts.stepOffset);
   const rounded = opts.rounded ? Math.round(fontSize) : roundFloat(fontSize, 2);
 
   return `${roundFloat(rounded / BASE_FONT_SIZE)}rem /* ${rounded}px */`;

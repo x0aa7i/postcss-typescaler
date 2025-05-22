@@ -1,6 +1,6 @@
 {
   "name": "postcss-typescaler",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "A PostCSS plugin for generating CSS Custom Properties for typography scales",
   "author": "Abdelilah Achak <contact.achak@gmail.com>",
   "license": "MIT",
@@ -17,6 +17,8 @@
   },
   "scripts": {
     "build": "tsup",
+    "format": "prettier --write .",
+    "lint": "tsc --noEmit && prettier --check .",
     "dev": "tsup --watch",
     "test": "vitest run"
   },

@@ -75,6 +75,12 @@ export interface PluginOptions {
    */
   rounded?: boolean;
   /**
+   * Adjusts all font size steps by this offset, including those from `steps` and `preset`.
+   * Positive values increase, negative values decrease the scale.
+   * @default 0
+   */
+  stepOffset?: number;
+  /**
    * A preset name to use for the default step configurations.
    * @default undefined
    */
@@ -109,6 +115,7 @@ export interface PluginOptions {
  */
 export interface NormalizedPluginOptions {
   scale: number;
+  stepOffset: number;
   fontSize: number; // fontSize will be converted to a number (px)
   lineHeight: string;
   prefix: string;
