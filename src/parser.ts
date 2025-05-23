@@ -1,4 +1,4 @@
-import type { PluginOptions, TypeStep } from "./types.js";
+import type { PluginOptions, TypeStep, TypeStepsMap } from "./types.js";
 import type { AtRule } from "postcss";
 
 import { log } from "./log.js";
@@ -84,8 +84,8 @@ const STEPS_PROPS: TypeStepKey[] = ["step", "lineHeight", "letterSpacing", "font
 /**
  * Parse step configurations from an css steps
  */
-export function parseCssTypeSteps(atRule: AtRule): Record<string, TypeStep> {
-  const steps: Record<string, TypeStep> = {};
+export function parseCssTypeSteps(atRule: AtRule): TypeStepsMap {
+  const steps: TypeStepsMap = {};
 
   atRule.walkDecls((node) => {
     if (!node.prop.startsWith("--")) return;
@@ -131,8 +131,8 @@ export function parseCssTypeSteps(atRule: AtRule): Record<string, TypeStep> {
   return steps;
 }
 
-export function parseJsTypeSteps(steps: PluginOptions["steps"]): Record<string, TypeStep> {
-  const parsedSteps: Record<string, TypeStep> = {};
+export function parseJsTypeSteps(steps: PluginOptions["steps"]): TypeStepsMap {
+  const parsedSteps: TypeStepsMap = {};
 
   for (const stepName in steps) {
     const stepOpts = steps[stepName];

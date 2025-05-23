@@ -6,6 +6,7 @@ import { generateStepsDeclarations } from "./generator.js";
 import { clearLogs, getLogs } from "./log.js";
 import { normalizeOptions, normalizeTypeSteps } from "./normalizer.js";
 import { parseCssOptions, parseCssTypeSteps, parseJsTypeSteps } from "./parser.js";
+import { deepMerge } from "./utils.js";
 
 function postcssTypescaler(options: PluginOptions = {}): Plugin {
   return {
@@ -25,11 +26,12 @@ function postcssTypescaler(options: PluginOptions = {}): Plugin {
 
         const { steps: jsSteps, ...jsOptions } = options;
         const pluginOptions = { ...jsOptions, ...parseCssOptions(atRule) };
-        const typeSteps = {
-          ...parseJsTypeSteps(jsSteps),
-          ...getPresetSteps(pluginOptions.preset),
-          ...parseCssTypeSteps(atRule),
-        };
+
+        const typeSteps = deepMerge(
+          parseJsTypeSteps(jsSteps),
+          getPresetSteps(pluginOptions.preset),
+          parseCssTypeSteps(atRule)
+        );
 
         const declarations = generateStepsDeclarations(
           normalizeOptions(pluginOptions),
