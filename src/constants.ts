@@ -14,19 +14,19 @@ export const DEFAULT_OPTIONS = {
 
 // tailwind font sizes
 const TAILWIND_STEPS = {
-  xs: { fontSize: "0.75rem", lineHeight: "calc(1 / 0.75)" },
-  sm: { fontSize: "0.875rem", lineHeight: "calc(1.25 / 0.875)" },
-  base: { fontSize: "1rem", lineHeight: "calc(1.5 / 1)" },
-  lg: { fontSize: "1.125rem", lineHeight: "calc(1.75 / 1.125)" },
-  xl: { fontSize: "1.25rem", lineHeight: "calc(1.75 / 1.25)" },
-  "2xl": { fontSize: "1.5rem", lineHeight: "calc(2 / 1.5)" },
-  "3xl": { fontSize: "1.875rem", lineHeight: "calc(2.25 / 1.875)" },
-  "4xl": { fontSize: "2.25rem", lineHeight: "calc(2.5 / 2.25)" },
-  "5xl": { fontSize: "3rem", lineHeight: "1" },
-  "6xl": { fontSize: "3.75rem", lineHeight: "1" },
-  "7xl": { fontSize: "4.5rem", lineHeight: "1" },
-  "8xl": { fontSize: "6rem", lineHeight: "1" },
-  "9xl": { fontSize: "8rem", lineHeight: "1" },
+  xs: { step: -2.4, lineHeight: "calc(1 / 0.75)" },
+  sm: { step: -1.1, lineHeight: "calc(1.25 / 0.875)" },
+  base: { step: 0, lineHeight: "calc(1.5 / 1)" },
+  lg: { step: 1, lineHeight: "calc(1.75 / 1.125)" },
+  xl: { step: 2, lineHeight: "calc(1.75 / 1.25)" },
+  "2xl": { step: 3.4, lineHeight: "calc(2 / 1.5)" },
+  "3xl": { step: 5.3, lineHeight: "calc(2.25 / 1.875)" },
+  "4xl": { step: 7, lineHeight: "calc(2.5 / 2.25)" },
+  "5xl": { step: 9.3, lineHeight: "1" },
+  "6xl": { step: 11.2, lineHeight: "1" },
+  "7xl": { step: 12.8, lineHeight: "1" },
+  "8xl": { step: 15.2, lineHeight: "1" },
+  "9xl": { step: 17.7, lineHeight: "1" },
 } satisfies NormalizedTypeStepsMap;
 
 const DEFAULT_STEPS = {
