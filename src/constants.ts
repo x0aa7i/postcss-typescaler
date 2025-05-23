@@ -6,7 +6,7 @@ export const DEFAULT_OPTIONS = {
   scale: 1.125,
   fontSize: 16,
   lineHeight: "1.5",
-  prefix: "text",
+  prefix: "type",
   rounded: true,
   stepOffset: 0,
   preset: undefined,
