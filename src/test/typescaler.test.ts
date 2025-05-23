@@ -1,8 +1,9 @@
+import type { PluginOptions } from "../types.js";
+
 import postcss from "postcss";
 import { describe, expect, it } from "vitest";
 
 import typeScaler from "../index.js";
-import { PluginOptions } from "../types.js";
 
 const processCss = async (css: string, config?: PluginOptions) => {
   return postcss([typeScaler(config)]).process(css, { from: undefined });
@@ -20,13 +21,14 @@ describe("Configuration Options", () => {
     const result = await processCss(css);
 
     const rawSizes = ["xs", "sm", "base", "lg", "xl", "2xl", "3xl", "4xl", "5xl", "6xl", "7xl", "8xl", "9xl"];
-    const expectedTextSizes = rawSizes.flatMap((size) => {
-      const baseVar = `--text-${size}`;
+    const expectedTextSizes = rawSizes.map((size: string) => {
+      const baseVar = `--type-${size}`;
       return [baseVar, `${baseVar}--line-height`];
     });
 
-    for (const size of expectedTextSizes) {
+    for (const [size, lineHeight] of expectedTextSizes) {
       expect(result.css).toContain(size);
+      expect(result.css).toContain(lineHeight);
     }
   });
 
@@ -78,8 +80,8 @@ describe("Configuration Options", () => {
     expect(result.css).toContain("--font-small:");
     expect(result.css).toContain("--font-regular:");
     expect(result.css).toContain("--font-large:");
-    expect(result.css).not.toContain("--text-base:");
-    expect(result.css).not.toContain("--text-lg:");
+    expect(result.css).not.toContain("--type-base:");
+    expect(result.css).not.toContain("--type-lg:");
   });
 
   it("should handle different font-size units (px, rem, em)", async () => {
@@ -95,8 +97,8 @@ describe("Configuration Options", () => {
       `;
 
     const resultRem = await processCss(cssRem);
-    expect(resultRem.css).toContain("--text-base: 1.5rem /* 24px */;");
-    expect(resultRem.css).toContain("--text-lg: 1.8rem /* 28.8px */;"); // 24 * 1.2 = 28.8  -> 1.8rem
+    expect(resultRem.css).toContain("--type-base: 1.5rem /* 24px */;");
+    expect(resultRem.css).toContain("--type-lg: 1.8rem /* 28.8px */;"); // 24 * 1.2 = 28.8  -> 1.8rem
 
     const cssEm = /* css */ `
         @typescaler {
@@ -107,8 +109,8 @@ describe("Configuration Options", () => {
         }
       `;
     const resultEm = await processCss(cssEm);
-    expect(resultEm.css).toContain("--text-base: 1.188rem /* 19px */;"); // 19.2 * 1 = 19.2... rounded to 19px -> 1.188em
-    expect(resultEm.css).toContain("--text-lg: 1.438rem /* 23px */;"); // 19.2 * 1.2 = 23.04... rounded to 23px -> 1.438em
+    expect(resultEm.css).toContain("--type-base: 1.188rem /* 19px */;"); // 19.2 * 1 = 19.2... rounded to 19px -> 1.188em
+    expect(resultEm.css).toContain("--type-lg: 1.438rem /* 23px */;"); // 19.2 * 1.2 = 23.04... rounded to 23px -> 1.438em
 
     const cssPx = /* css */ `
         @typescaler {
@@ -118,7 +120,7 @@ describe("Configuration Options", () => {
         }
       `;
     const resultPx = await processCss(cssPx);
-    expect(resultPx.css).toContain("--text-sm: 0.813rem /* 13px */;"); // 16 * 1.2^-1 = 13.33... rounded to 13px -> 0.813rem
+    expect(resultPx.css).toContain("--type-sm: 0.813rem /* 13px */;"); // 16 * 1.2^-1 = 13.33... rounded to 13px -> 0.813rem
 
     const cssUnitless = /* css */ `
         @typescaler {
@@ -128,7 +130,7 @@ describe("Configuration Options", () => {
         }
       `;
     const resultUnitless = await processCss(cssUnitless);
-    expect(resultUnitless.css).toContain("--text-base: 1.25rem /* 20px */;"); // 20 * 1.2^0 = 20px -> 1.25rem
+    expect(resultUnitless.css).toContain("--type-base: 1.25rem /* 20px */;"); // 20 * 1.2^0 = 20px -> 1.25rem
   });
 
   it("should handle different line-height units (unitless, rem, px)", async () => {
@@ -146,9 +148,9 @@ describe("Configuration Options", () => {
          }
        `;
     const result = await processCss(css);
-    expect(result.css).toContain("--text-sm--line-height: 1.4rem");
-    expect(result.css).toContain("--text-base--line-height: 1.5"); // Default unitless applied
-    expect(result.css).toContain("--text-lg--line-height: 24px"); // Should keep px unit if provided
+    expect(result.css).toContain("--type-sm--line-height: 1.4rem");
+    expect(result.css).toContain("--type-base--line-height: 1.5"); // Default unitless applied
+    expect(result.css).toContain("--type-lg--line-height: 24px"); // Should keep px unit if provided
   });
 
   it("should output px with decimal places when rounded is false", async () => {
@@ -161,7 +163,7 @@ describe("Configuration Options", () => {
         }
       `;
     const result = await processCss(css);
-    expect(result.css).toContain("--text-lg: 1.2rem /* 19.2px */;");
+    expect(result.css).toContain("--type-lg: 1.2rem /* 19.2px */;");
   });
 
   it("should round px to the nearest integer when rounded is true (default)", async () => {
@@ -174,7 +176,7 @@ describe("Configuration Options", () => {
           }
         `;
     const result = await processCss(css);
-    expect(result.css).toContain("--text-lg: 1.375rem /* 22px */;"); // 19px converted to rem
+    expect(result.css).toContain("--type-lg: 1.375rem /* 22px */;"); // 19px converted to rem
   });
 
   it("should generate CSS variables with a custom prefix", async () => {
@@ -186,7 +188,7 @@ describe("Configuration Options", () => {
       `;
     const result = await processCss(css);
     expect(result.css).toContain("--custom-text-base:");
-    expect(result.css).not.toContain("--text-base:");
+    expect(result.css).not.toContain("--type-base:");
   });
 });
 
@@ -200,9 +202,9 @@ describe("Breakpoint Syntax and Definitions", () => {
         }
       `;
     const result = await processCss(css);
-    expect(result.css).toContain("--text-md:");
-    expect(result.css).toContain("--text-lg:");
-    expect(result.css).not.toContain("--text-base:"); // Not explicitly defined
+    expect(result.css).toContain("--type-md:");
+    expect(result.css).toContain("--type-lg:");
+    expect(result.css).not.toContain("--type-base:"); // Not explicitly defined
   });
 
   it("should define steps using --[name]--[prop] shorthand", async () => {
@@ -216,10 +218,10 @@ describe("Breakpoint Syntax and Definitions", () => {
         }
       `;
     const result = await processCss(css);
-    expect(result.css).toContain("--text-sm:");
-    expect(result.css).toContain("--text-md:");
-    expect(result.css).toContain("--text-md--line-height: 1.5");
-    expect(result.css).not.toContain("--text-base:"); // Not explicitly defined
+    expect(result.css).toContain("--type-sm:");
+    expect(result.css).toContain("--type-md:");
+    expect(result.css).toContain("--type-md--line-height: 1.5");
+    expect(result.css).not.toContain("--type-base:"); // Not explicitly defined
   });
 
   it("should define steps using --[name] step line-height letter-spacing shorthand", async () => {
@@ -229,9 +231,9 @@ describe("Breakpoint Syntax and Definitions", () => {
         }
       `;
     const result = await processCss(css);
-    expect(result.css).toContain("--text-xl:");
-    expect(result.css).toContain("--text-xl--line-height: 1.8");
-    expect(result.css).toContain("--text-xl--letter-spacing: -0.03em");
+    expect(result.css).toContain("--type-xl:");
+    expect(result.css).toContain("--type-xl--line-height: 1.8");
+    expect(result.css).toContain("--type-xl--letter-spacing: -0.03em");
   });
 
   it("should define steps using both css shorthand and --[name]--[prop] syntax", async () => {
@@ -243,11 +245,11 @@ describe("Breakpoint Syntax and Definitions", () => {
         }
       `;
     const result = await processCss(css);
-    expect(result.css).toContain("--text-sm:");
-    expect(result.css).toContain("--text-sm--line-height: 1.5");
-    expect(result.css).toContain("--text-md:");
-    expect(result.css).toContain("--text-md--line-height: 1.5");
-    expect(result.css).not.toContain("--text-base:"); // Not explicitly defined
+    expect(result.css).toContain("--type-sm:");
+    expect(result.css).toContain("--type-sm--line-height: 1.5");
+    expect(result.css).toContain("--type-md:");
+    expect(result.css).toContain("--type-md--line-height: 1.5");
+    expect(result.css).not.toContain("--type-base:"); // Not explicitly defined
   });
 
   it("should remove the AtRules from the output", async () => {
@@ -279,7 +281,7 @@ describe("Warnings", () => {
     const result = await processCss(css);
     const warning = result.messages[0];
     expect(warning.text).toBe('Could not parse "scale" value "invalid". Skipping.');
-    expect(result.css).toContain("--text-lg: 1.125rem /* 18px */;"); // using default scale of 1.125
+    expect(result.css).toContain("--type-lg: 1.125rem /* 18px */;"); // using default scale of 1.125
   });
 
   it("should handle missing step in a declaration", async () => {
