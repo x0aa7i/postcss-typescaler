@@ -1,7 +1,7 @@
 {
   "name": "postcss-typescaler",
   "version": "0.5.3",
-  "description": "A PostCSS plugin for generating CSS Custom Properties for typography scales",
+  "description": "PostCSS plugin for generating modular typographic scales.",
   "author": "Abdelilah Achak <contact.achak@gmail.com>",
   "license": "MIT",
   "main": "dist/index.js",
