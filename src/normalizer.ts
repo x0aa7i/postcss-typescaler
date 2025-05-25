@@ -26,16 +26,16 @@ const typeStepsNormalizer: TypeStepNormalizer = {
   fontSize: (value) => {
     if (typeof value === "number") return `${value}px`;
     if (typeof value !== "string") return null;
-    return value.trim();
+    return value.trim() || null;
   },
   lineHeight: (value) => {
     if (typeof value === "number") return String(value);
     if (typeof value !== "string") return null;
-    return value.trim();
+    return value.trim() || null;
   },
   letterSpacing: (value) => {
     if (typeof value !== "string") return null;
-    return value.trim();
+    return value.trim() || null;
   },
 };
 

@@ -270,7 +270,121 @@ describe("Breakpoint Syntax and Definitions", () => {
   });
 });
 
+describe("Complex Merging Scenarios", () => {
+  it("should correctly merge configurations: JS < Preset < CSS", async () => {
+    const jsOptions: PluginOptions = {
+      prefix: "js", // Will be overridden by CSS
+      steps: {
+        md: { step: 0 }, // JS provides base step
+      },
+      preset: "default", // Default preset might provide lineHeight for 'md'
+      // DEFAULT_OPTIONS.prefix is 'type', DEFAULT_STEPS.md.lineHeight is '1.5'
+    };
+    const css = /* css */ `
+      @typescaler {
+        prefix: "css"; /* CSS overrides JS prefix */
+        --md--font-size: 16px; /* CSS provides explicit fontSize, overriding any preset calculation for fontSize */
+        --md--letter-spacing: 0.05em; /* CSS adds letterSpacing */
+      }
+    `;
+
+    const result = await processCss(css, jsOptions);
+    expect(result.css).toContain("--css-md: 16px;"); // fontSize from CSS
+    expect(result.css).toContain("--css-md--line-height: 1.5;"); // lineHeight from preset
+    expect(result.css).toContain("--css-md--letter-spacing: 0.05em;"); // letterSpacing from CSS
+    // 'step: 0' is used in calculation if fontSize wasn't explicit. Here fontSize is explicit.
+  });
+
+  it("should deepMerge step configurations from JS and CSS", async () => {
+    const jsOptions: PluginOptions = {
+      steps: {
+        sm: { step: -1, lineHeight: "1.4" },
+      },
+    };
+    const css = /* css */ `
+      @typescaler {
+        --sm--letter-spacing: 0.01em;
+        --sm--font-size: 14px; /* Also add/override fontSize via CSS */
+      }
+    `;
+
+    const result = await processCss(css, jsOptions);
+    expect(result.css).toContain("--type-sm: 14px;"); // fontSize from CSS (default prefix 'type' as none in CSS/JS options)
+    expect(result.css).toContain("--type-sm--line-height: 1.4;"); // lineHeight from JS
+    expect(result.css).toContain("--type-sm--letter-spacing: 0.01em"); // letterSpacing from CSS (removed semicolon for toContain robustness)
+    // step: -1 from JS is used if fontSize is not specified. Here CSS specifies fontSize.
+  });
+});
+
+describe("stepOffset Option Tests", () => {
+  it("should apply stepOffset from JS options", async () => {
+    const jsOptions: PluginOptions = {
+      stepOffset: 1, // Shift all steps up by 1
+      steps: {
+        base: { step: 0 }, // Effective step: 0 + 1 = 1
+        // 16 * 1.125^1 = 18px (default scale, default prefix 'type')
+      },
+    };
+    const css = /* css */ `@typescaler {}`;
+    const result = await processCss(css, jsOptions);
+    expect(result.css).toContain("--type-base: 1.125rem /* 18px */;");
+  });
+
+  it("should apply stepOffset from CSS options", async () => {
+    const css = /* css */ `
+      @typescaler {
+        step-offset: -1; /* Shift all steps down by 1 */
+        --base: 0; /* Effective step: 0 - 1 = -1 */
+      }
+    `;
+    const result = await processCss(css);
+    expect(result.css).toContain("--type-base: 0.875rem /* 14px */;");
+  });
+
+  it("CSS stepOffset should override JS stepOffset", async () => {
+    const jsOptions: PluginOptions = {
+      stepOffset: 2, // This should be ignored
+    };
+    const css = /* css */ `
+      @typescaler {
+        step-offset: 1; /* This should be used */
+        --base: 0; /* Effective step: 0 + 1 = 1 */
+                     /* 16 * 1.125^1 = 18px */
+      }
+    `;
+    const result = await processCss(css, jsOptions);
+    expect(result.css).toContain("--type-base: 1.125rem /* 18px */;");
+  });
+
+  it("stepOffset should not affect explicitly set fontSize values", async () => {
+    const css = /* css */ `
+      @typescaler {
+        step-offset: 2;
+        --explicit: 0; /* This step would normally be scaled */
+        --explicit--font-size: 30px; /* But fontSize is explicit */
+      }
+    `;
+    const result = await processCss(css);
+    expect(result.css).toContain("--type-explicit: 30px;");
+    // Check that line-height is still generated
+    expect(result.css).toContain("--type-explicit--line-height:");
+  });
+});
+
 describe("Warnings", () => {
+  // Helper to check for a specific warning message
+  const expectWarning = (result: import("postcss").Result, message: string) => {
+    expect(result.messages).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          plugin: "postcss-typescaler",
+          text: message,
+          type: "warning",
+        }),
+      ])
+    );
+  };
+
   it("should warn for invalid scale and use default", async () => {
     const css = /* css */ `
         @typescaler {
@@ -279,9 +393,113 @@ describe("Warnings", () => {
         }
       `;
     const result = await processCss(css);
-    const warning = result.messages[0];
-    expect(warning.text).toBe('Could not parse "scale" value "invalid". Skipping.');
+    expectWarning(result, 'Could not parse "scale" value "invalid". Skipping.');
     expect(result.css).toContain("--type-lg: 1.125rem /* 18px */;"); // using default scale of 1.125
+  });
+
+  it("Parser: should warn for unknown property in @typescaler rule options", async () => {
+    const css = /* css */ `
+      @typescaler {
+        unknownOption: true;
+      }
+    `;
+    const result = await processCss(css);
+    expectWarning(result, 'Unknown property "unknownOption" in @typescaler rule. Skipping.');
+  });
+
+  it("Parser: should warn for unparseable value for a known option", async () => {
+    // Example: scale already tested. Let's try step-offset
+    const css = /* css */ `
+      @typescaler {
+        step-offset: "not-a-number";
+      }
+    `;
+    const result = await processCss(css);
+    expectWarning(result, 'Could not parse "stepOffset" value ""not-a-number"". Skipping.');
+  });
+
+  it("Parser: should warn for unknown property in a step definition", async () => {
+    const css = /* css */ `
+      @typescaler {
+        --myStep--unknownProp: 1;
+      }
+    `;
+    const result = await processCss(css);
+    expectWarning(result, 'Unknown property "unknownProp" in --myStep--unknownProp. Ignoring.');
+  });
+
+  it("Parser: should warn for unparseable value in a step definition (property-specific)", async () => {
+    const css = /* css */ `
+      @typescaler {
+        --myStep--step: not-a-step-value;
+      }
+    `;
+    const result = await processCss(css);
+    expectWarning(
+      result,
+      'Could not parse "step" value "not-a-step-value" associated with --myStep. Skipping.'
+    );
+  });
+
+  it("Parser: should warn for unparseable value in a step definition (shorthand)", async () => {
+    const css = /* css */ `
+      @typescaler {
+        --myStep: not-a-step-value 1.5;
+      }
+    `;
+    const result = await processCss(css);
+    expectWarning(result, 'Could not parse "step" value "not-a-step-value" in shorthand --myStep. Skipping.');
+  });
+
+  // Normalizer Warnings
+  it("Normalizer: should warn and use default for invalid fontSize unit in JS options", async () => {
+    const jsOptions: PluginOptions = { fontSize: "invalid-unit" as any };
+    const result = await processCss("@typescaler {}", jsOptions); // Added dummy @typescaler for log processing
+    expectWarning(result, 'Invalid fontSize value "invalid-unit". Using default value: 16.');
+  });
+
+  it("Normalizer: should warn for unknown property in JS options", async () => {
+    const jsOptions = { unknownJsOption: "hello" } as any;
+    const result = await processCss("@typescaler {}", jsOptions); // Added dummy @typescaler
+    expectWarning(result, 'Unknown property "unknownJsOption" in @typescaler rule. Skipping.');
+  });
+
+  it("Normalizer: should warn for unknown property within a JS step definition", async () => {
+    const jsOptions: PluginOptions = {
+      steps: {
+        myStep: { unknownProp: "value" } as any,
+      },
+    };
+    const result = await processCss("@typescaler {}", jsOptions); // Added dummy @typescaler
+    expectWarning(result, 'Unknown property "unknownProp" in @myStep step. Skipping.');
+  });
+
+  it("Normalizer: should warn for invalid value within a JS step definition that normalizer skips", async () => {
+    const jsOptions: PluginOptions = {
+      steps: {
+        myStep: { step: "foo" as any },
+      },
+    };
+    const result = await processCss("@typescaler {}", jsOptions); // Added dummy @typescaler
+    expectWarning(result, 'Invalid step value "foo" in @myStep. Skipping.');
+  });
+
+  it("Normalizer: should warn if a step lacks both step and fontSize after normalization (from JS)", async () => {
+    const jsOptions: PluginOptions = {
+      steps: {
+        test: { lineHeight: 1.5 },
+      },
+    };
+    const result = await processCss("@typescaler {}", jsOptions); // Added dummy @typescaler
+    expectWarning(result, 'Invalid config for "test" step. fontSize and step are both undefined. Skipping.');
+  });
+
+  it("Normalizer: should warn and skip value if no default (e.g. preset in JS options)", async () => {
+    const jsOptions: PluginOptions = {
+      preset: "nonExistentPreset",
+    };
+    const result = await processCss("@typescaler {}", jsOptions); // Added dummy @typescaler
+    expectWarning(result, 'Invalid preset value "nonExistentPreset". Skipping.');
   });
 
   it("should handle missing step in a declaration", async () => {
@@ -298,12 +516,7 @@ describe("Warnings", () => {
     `;
 
     const result = await processCss(css);
-
     expect(result.messages).toHaveLength(1);
-    const warning = result.messages[0];
-    expect(warning.plugin).toBe("postcss-typescaler");
-    expect(warning.text).toBe(
-      'Invalid config for "sm" step. fontSize and step are both undefined. Skipping.'
-    );
+    expectWarning(result, 'Invalid config for "sm" step. fontSize and step are both undefined. Skipping.');
   });
 });

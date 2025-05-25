@@ -29,26 +29,29 @@ const cssOptionsParsers: Parsers<PluginOptions> = {
     const numericValue = Number(value.trim());
     return isNaN(numericValue) ? value.trim() || undefined : numericValue;
   },
-  lineHeight: (value) => value.trim(),
-  prefix: (value) => value.trim(),
+  lineHeight: (value) => value,
+  prefix: (value) => value,
   rounded: (value) => value.toLowerCase() === "true",
   stepOffset: (value) => {
     const parsed = parseFloat(value);
     return isNaN(parsed) ? undefined : parsed;
   },
-  preset: (value) => value.trim().replace(/['"]/g, "").toLowerCase(),
+  preset: (value) => value.replace(/['"]/g, "").toLowerCase(),
 };
 
 const cssTypeStepParsers: Parsers<TypeStep> = {
-  step: parseFloat,
+  step: (value) => {
+    const parsed = parseFloat(value);
+    return isNaN(parsed) ? undefined : parsed;
+  },
   fontSize: (value) => {
     if (!isNaN(parseFloat(value)) && String(parseFloat(value)) === value) {
       return parseFloat(value); // Return number if it's a simple number string
     }
-    return value.trim();
+    return value;
   },
-  lineHeight: (value) => value.trim(),
-  letterSpacing: (value) => value.trim(),
+  lineHeight: (value) => value,
+  letterSpacing: (value) => value,
 };
 
 /**
@@ -104,7 +107,7 @@ export function parseCssTypeSteps(atRule: AtRule): TypeStepsMap {
 
       const parsedValue = cssTypeStepParsers[prop]?.(node.value);
       if (parsedValue === undefined) {
-        log(`Could not parse "${prop}" value "${node.value}" in @${name} step. Skipping.`, {
+        log(`Could not parse "${prop}" value "${node.value}" associated with --${name}. Skipping.`, {
           node,
         });
         return;
@@ -119,7 +122,7 @@ export function parseCssTypeSteps(atRule: AtRule): TypeStepsMap {
 
         const parsedValue = cssTypeStepParsers[prop]?.(value);
         if (parsedValue === undefined) {
-          log(`Could not parse "${prop}" value "${value}" in @${name} step. Skipping.`, { node });
+          log(`Could not parse "${prop}" value "${value}" in shorthand --${name}. Skipping.`, { node });
           return;
         }
 

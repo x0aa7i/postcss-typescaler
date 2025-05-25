@@ -43,15 +43,16 @@ function createVariableDeclarations({
   lineHeight: string;
   letterSpacing?: string;
 }): Declaration[] {
+  const propNameBase = prefix ? `${prefix}-${stepName}` : stepName;
+  const mainVar = `--${propNameBase}`;
+
   const declarations = [
-    new Declaration({ prop: `--${prefix}-${stepName}`, value: fontSize }),
-    new Declaration({ prop: `--${prefix}-${stepName}--line-height`, value: lineHeight }),
+    new Declaration({ prop: mainVar, value: fontSize }),
+    new Declaration({ prop: `${mainVar}--line-height`, value: lineHeight }),
   ];
 
   if (letterSpacing) {
-    declarations.push(
-      new Declaration({ prop: `--${prefix}-${stepName}--letter-spacing`, value: letterSpacing })
-    );
+    declarations.push(new Declaration({ prop: `${mainVar}--letter-spacing`, value: letterSpacing }));
   }
 
   return declarations;
@@ -64,6 +65,7 @@ function getFontSizeValue(type: NormalizedTypeStep, opts: NormalizedPluginOption
   // font size in px
   const fontSize = opts.fontSize * Math.pow(opts.scale, type.step + opts.stepOffset);
   const rounded = opts.rounded ? Math.round(fontSize) : roundFloat(fontSize, 2);
+  const remValue = roundFloat(rounded / BASE_FONT_SIZE, 3);
 
-  return `${roundFloat(rounded / BASE_FONT_SIZE)}rem /* ${rounded}px */`;
+  return `${remValue}rem /* ${rounded}px */`;
 }
